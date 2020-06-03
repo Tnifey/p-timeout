@@ -1,14 +1,15 @@
-declare class TimeoutErrorClass extends Error {
-	readonly name: 'TimeoutError';
-	constructor(message?: string);
+"use strict";
+
+export class TimeoutError extends Error {
+	readonly name: "TimeoutError";
+
+	constructor(message?: string) {
+		super(message);
+		this.name = "TimeoutError";
+	}
 }
 
-declare namespace pTimeout {
-	type TimeoutError = TimeoutErrorClass;
-}
-
-declare const pTimeout: {
-	/**
+/**
 	Timeout a promise after a specified amount of time.
 
 	If you pass in a cancelable promise, specifically a promise with a `.cancel()` method, that method will be called when the `pTimeout` promise times out.
@@ -29,13 +30,13 @@ declare const pTimeout: {
 	//=> [TimeoutError: Promise timed out after 50 milliseconds]
 	```
 	*/
-	<ValueType>(
-		input: PromiseLike<ValueType>,
-		milliseconds: number,
-		message?: string | Error
-	): Promise<ValueType>;
+export function pTimeout<T>(
+	input: Promise<T>,
+	milliseconds: number,
+	message?: string | Error
+): Promise<T>;
 
-	/**
+/**
 	Timeout a promise after a specified amount of time.
 
 	If you pass in a cancelable promise, specifically a promise with a `.cancel()` method, that method will be called when the `pTimeout` promise times out.
@@ -57,16 +58,55 @@ declare const pTimeout: {
 	});
 	```
 	*/
-	<ValueType, ReturnType>(
-		input: PromiseLike<ValueType>,
-		milliseconds: number,
-		fallback: () => ReturnType | Promise<ReturnType>
-	): Promise<ValueType | ReturnType>;
+export function pTimeout<T>(
+	input: Promise<T>,
+	milliseconds: number,
+	fallback: () => T | Promise<T>
+): Promise<T>;
 
-	TimeoutError: typeof TimeoutErrorClass;
+export function pTimeout<T>(
+	promise: Promise<T>,
+	milliseconds: number,
+	fallback?: string | Error | (() => T | Promise<T>)
+): Promise<T> {
+	return new Promise((resolve, reject) => {
+		if (typeof milliseconds !== "number" || milliseconds < 0) {
+			throw new TypeError("Expected `milliseconds` to be a positive number");
+		}
 
-	// TODO: Remove this for the next major release
-	default: typeof pTimeout;
-};
+		if (milliseconds === Infinity) {
+			resolve(promise);
+			return;
+		}
 
-export = pTimeout;
+		const timer = setTimeout(() => {
+			if (typeof fallback === "function") {
+				try {
+					resolve(fallback());
+				} catch (error) {
+					reject(error);
+				}
+
+				return;
+			}
+
+			const message =
+				typeof fallback === "string"
+					? fallback
+					: `Promise timed out after ${milliseconds} milliseconds`;
+
+			const timeoutError =
+				fallback instanceof Error ? fallback : new TimeoutError(message);
+
+			if (typeof (promise as any).cancel === "function") {
+				(promise as any).cancel();
+			}
+
+			reject(timeoutError);
+		}, milliseconds);
+
+		promise.then(resolve, reject).finally(() => clearTimeout(timer));
+	});
+}
+
+export default pTimeout;

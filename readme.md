@@ -1,31 +1,31 @@
-# p-timeout [![Build Status](https://travis-ci.org/sindresorhus/p-timeout.svg?branch=master)](https://travis-ci.org/sindresorhus/p-timeout)
+# p-timeout (deno)
 
 > Timeout a promise after a specified amount of time
-
+> compatible with deno
 
 ## Install
 
+```ts
+...
 ```
-$ npm install p-timeout
-```
-
 
 ## Usage
 
-```js
-const delay = require('delay');
-const pTimeout = require('p-timeout');
+```ts
+import { pTimeout } from "...";
 
-const delayedPromise = delay(200);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-pTimeout(delayedPromise, 50).then(() => 'foo');
-//=> [TimeoutError: Promise timed out after 50 milliseconds]
+pTimeout(sleep(200), 500).then(() => "bar"); // bar
+
+pTimeout(sleep(500), 200).then(() => "foo");
+//=> [TimeoutError: Promise timed out after 200 milliseconds]
 ```
-
 
 ## API
 
 ### pTimeout(input, milliseconds, message?)
+
 ### pTimeout(input, milliseconds, fallback?)
 
 Returns a decorated `input` that times out after `milliseconds` time.
@@ -64,13 +64,11 @@ Do something other than rejecting with an error on timeout.
 You could for example retry:
 
 ```js
-const delay = require('delay');
-const pTimeout = require('p-timeout');
+import { pTimeout } from "...";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const delayedPromise = () => delay(200);
-
-pTimeout(delayedPromise(), 50, () => {
-	return pTimeout(delayedPromise(), 300);
+pTimeout(sleep(100), 50, () => {
+	return pTimeout(sleep(100), 300);
 });
 ```
 
@@ -78,10 +76,6 @@ pTimeout(delayedPromise(), 50, () => {
 
 Exposed for instance checking and sub-classing.
 
-
 ## Related
 
-- [delay](https://github.com/sindresorhus/delay) - Delay a promise a specified amount of time
-- [p-min-delay](https://github.com/sindresorhus/p-min-delay) - Delay a promise a minimum amount of time
-- [p-retry](https://github.com/sindresorhus/p-retry) - Retry a promise-returning function
-- [More…](https://github.com/sindresorhus/promise-fun)
+- [delay](https://github.com/sindresorhus/p-timeout) - Delay a promise a specified amount of time
